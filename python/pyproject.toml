@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qopanza"
+# Single-sourced from qopanza/__init__.py so the package version
+# and __version__ cannot drift apart. Bump it in one place.
+dynamic = ["version"]
+description = "Post-quantum cryptography as an API — ML-KEM, ML-DSA and SLH-DSA for Python, plus the qopanza CLI"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Gsente LLC" }]
+keywords = [
+    "post-quantum",
+    "cryptography",
+    "pqc",
+    "ml-kem",
+    "ml-dsa",
+    "slh-dsa",
+    "kyber",
+    "dilithium",
+    "quantum-safe",
+    "encryption",
+    "security",
+]
+# Trove classifiers are how PyPI's search and filters find this package.
+# Every one below is from the official list — an invented classifier is
+# rejected at upload, not at build, which is a slow way to find out.
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.27.0",
+]
+
+[project.urls]
+Homepage = "https://qopanza.com"
+Repository = "https://github.com/isingomajoel2023/qopanza-sdks"
+Issues = "https://github.com/isingomajoel2023/qopanza-sdks/issues"
+
+[project.scripts]
+qopanza = "qopanza.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "pytest-httpx>=0.30", "respx>=0.21"]
+# Zero-knowledge mode does real post-quantum crypto on the caller's own
+# machine, which needs the native library. Kept optional so the plain SDK
+# stays a pure-Python install with one dependency.
+zk = ["liboqs-python>=0.12", "cryptography>=42.0"]
+
+[tool.setuptools.dynamic]
+version = { attr = "qopanza.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["qopanza*"]
+
+# Ships the PEP 561 marker so type checkers in consuming projects
+# actually read the annotations in this package instead of treating it
+# as untyped. Without this file the annotations are invisible
+# downstream, which defeats the point of having written them.
+[tool.setuptools.package-data]
+qopanza = ["py.typed"]

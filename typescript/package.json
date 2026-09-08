@@ -1,0 +1,51 @@
+{
+  "name": "qopanza",
+  "version": "0.1.0",
+  "description": "TypeScript/JavaScript client for the Qopanza API",
+  "license": "Apache-2.0",
+  "author": "Gsente LLC",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/client.js",
+    "dist/client.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test dist/client.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.0"
+  },
+  "homepage": "https://qopanza.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isingomajoel2023/qopanza-sdks.git",
+    "directory": "typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/isingomajoel2023/qopanza-sdks/issues"
+  },
+  "keywords": [
+    "post-quantum",
+    "cryptography",
+    "pqc",
+    "ml-kem",
+    "ml-dsa",
+    "security",
+    "encryption",
+    "qopanza"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

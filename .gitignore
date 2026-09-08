@@ -1,0 +1,25 @@
+# Build output
+dist/
+build/
+target/
+bin/
+obj/
+*.egg-info/
+__pycache__/
+*.pyc
+node_modules/
+vendor/
+*.gem
+*.jar
+*.nupkg
+*.snupkg
+.pytest_cache/
+Cargo.lock
+
+# Never in a public repository. The SDKs read credentials from the
+# environment, so there is no reason for one of these to exist here —
+# and this repository is the one that is public.
+.env
+.env.*
+*.pem
+*.key

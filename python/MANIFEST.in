@@ -1,0 +1,9 @@
+# The wheel is built from the package directory, but the sdist is built
+# from this tree — and by default it would omit the licence and tests,
+# which is exactly what people check when auditing a security package
+# before installing it.
+include LICENSE
+include README.md
+recursive-include tests *.py
+recursive-include examples *.py
+global-exclude __pycache__/* *.pyc *.pyo

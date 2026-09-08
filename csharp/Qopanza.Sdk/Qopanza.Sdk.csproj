@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <PackageId>Qopanza.Sdk</PackageId>
+    <Version>0.1.0</Version>
+    <Description>C#/.NET client for the Qopanza API</Description>
+    <Authors>Gsente LLC</Authors>
+    <Company>Gsente LLC</Company>
+    <Copyright>Copyright 2026 Gsente LLC</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+
+    <PackageProjectUrl>https://qopanza.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/isingomajoel2023/qopanza-sdks</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>post-quantum;cryptography;pqc;ml-kem;ml-dsa;security;qopanza</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Deterministic builds and a source link, so anyone can verify the
+         package was built from the commit it claims. On a security
+         library that is the difference between "trust us" and "check". -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- NuGet does not pick the README up implicitly; without this the
+         package page on nuget.org is blank apart from the description. -->
+    <None Include="../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

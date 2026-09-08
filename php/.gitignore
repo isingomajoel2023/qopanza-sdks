@@ -1,0 +1,14 @@
+# This directory is mirrored to the qopanza-php repository, which is
+# where Packagist reads it from. The mirror has no .gitignore of its own
+# unless this one travels with it — so it lives here rather than at the
+# sdks/ root, where it would cover this directory but never reach the
+# mirror.
+
+vendor/
+.phpunit.result.cache
+.phpunit.cache/
+
+# Not committed, on purpose: this is a library. A lock file pins the
+# transitive versions used to develop it, which is not what anyone
+# depending on it resolves, so committing one only misleads.
+composer.lock

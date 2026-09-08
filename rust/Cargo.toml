@@ -1,0 +1,26 @@
+[package]
+name = "qopanza"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Rust client for the Qopanza API (post-quantum cryptography + crypto discovery)"
+license = "Apache-2.0"
+authors = ["Gsente LLC"]
+repository = "https://github.com/isingomajoel2023/qopanza-sdks"
+homepage = "https://qopanza.com"
+documentation = "https://docs.rs/qopanza"
+readme = "README.md"
+# crates.io allows at most 5 keywords and 5 categories.
+keywords = ["post-quantum", "cryptography", "pqc", "ml-kem", "security"]
+categories = ["cryptography", "api-bindings"]
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+thiserror = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6"

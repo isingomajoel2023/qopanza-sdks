@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qopanza.Sdk", "Qopanza.Sdk\Qopanza.Sdk.csproj", "{A9B3349E-3951-4B5C-AB8E-D71ACEB49A15}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qopanza.Sdk.Tests", "Qopanza.Sdk.Tests\Qopanza.Sdk.Tests.csproj", "{79FD43E3-EBA1-40EF-B0DB-B26EC03A4B28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qopanza.Sdk.Examples", "Qopanza.Sdk.Examples\Qopanza.Sdk.Examples.csproj", "{B6BF148F-D3FE-429D-9B37-5D2064B20C28}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A9B3349E-3951-4B5C-AB8E-D71ACEB49A15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9B3349E-3951-4B5C-AB8E-D71ACEB49A15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9B3349E-3951-4B5C-AB8E-D71ACEB49A15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9B3349E-3951-4B5C-AB8E-D71ACEB49A15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79FD43E3-EBA1-40EF-B0DB-B26EC03A4B28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79FD43E3-EBA1-40EF-B0DB-B26EC03A4B28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79FD43E3-EBA1-40EF-B0DB-B26EC03A4B28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79FD43E3-EBA1-40EF-B0DB-B26EC03A4B28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6BF148F-D3FE-429D-9B37-5D2064B20C28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6BF148F-D3FE-429D-9B37-5D2064B20C28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6BF148F-D3FE-429D-9B37-5D2064B20C28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6BF148F-D3FE-429D-9B37-5D2064B20C28}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
