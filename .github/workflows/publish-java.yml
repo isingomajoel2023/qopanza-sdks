@@ -1,0 +1,114 @@
+# Maven Central, on a java-v* tag. See publish-python.yml for why this file
+# lives under sdks/.github/workflows/ in the source repository.
+#
+# ## The one registry with no OIDC
+#
+# Every other registry here publishes without a stored credential. Central
+# does not offer trusted publishing, so this workflow needs three real
+# secrets on the qopanza-sdks repository:
+#
+#   CENTRAL_TOKEN_USERNAME   } from central.sonatype.com -> your account ->
+#   CENTRAL_TOKEN_PASSWORD   } Generate User Token
+#   GPG_PRIVATE_KEY            gpg --armor --export-secret-keys <KEY>
+#   GPG_PASSPHRASE             the passphrase for that key
+#
+# Treat GPG_PRIVATE_KEY as what it is: the ability to sign artifacts as
+# Gsente LLC. It is the highest-value secret in either repository. Scope the
+# `release` environment to protected tags so a pull request from a fork can
+# never reach it.
+#
+# ## autoPublish is false
+#
+# The POM uploads and stops at "validated". Nothing reaches Central until
+# you press Publish in the portal. A published version can never be
+# replaced or deleted — only superseded — so the first release of anything
+# is worth looking at before it becomes permanent.
+name: Publish Java SDK
+
+on:
+  push:
+    tags: ["java-v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Tag matches project version
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: java
+        run: |
+          tag="${GITHUB_REF_NAME#java-v}"
+          pkg="$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)"
+          echo "tag=$tag project=$pkg"
+          [ "$tag" = "$pkg" ] || {
+            echo "::error::Tag $GITHUB_REF_NAME implies $tag but pom.xml says $pkg."
+            exit 1
+          }
+
+      - name: Test
+        working-directory: java
+        run: mvn -B test
+
+      # Builds the jar, the sources jar and the javadoc jar without signing,
+      # so a missing plugin or a javadoc error fails here rather than after
+      # an upload. GPG is skipped because this job has no key.
+      - name: Build the full release bundle unsigned
+        working-directory: java
+        run: mvn -B -Prelease package -Dgpg.skip=true
+
+      - name: Confirm all three artifacts exist
+        working-directory: java
+        run: |
+          set -euo pipefail
+          v="$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)"
+          for suffix in "" "-sources" "-javadoc"; do
+            f="target/qopanza-${v}${suffix}.jar"
+            [ -f "$f" ] || { echo "::error::missing $f — Central rejects a bundle without it"; exit 1; }
+            echo "ok  $f  ($(stat -c%s "$f") bytes)"
+          done
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      # setup-java writes the settings.xml server entry and imports the
+      # signing key in one step. The server id must match
+      # <publishingServerId>central</publishingServerId> in the POM, or the
+      # deploy fails with an authentication error that names nothing useful.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Deploy to the Central Portal
+        working-directory: java
+        env:
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: mvn -B -Prelease deploy
+
+      - name: What happens next
+        run: |
+          echo "Uploaded and validated. It is NOT public yet."
+          echo "Go to central.sonatype.com -> Publish -> Deployments, check the"
+          echo "bundle, then press Publish. Allow up to ~30 minutes afterwards"
+          echo "for it to appear in search."

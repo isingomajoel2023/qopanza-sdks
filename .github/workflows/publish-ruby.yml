@@ -1,0 +1,97 @@
+# RubyGems, on a ruby-v* tag. See publish-python.yml for why this file
+# lives under sdks/.github/workflows/ in the source repository.
+#
+# Trusted Publishing (OIDC). This matters more here than elsewhere: the
+# gemspec sets `rubygems_mfa_required`, and MFA used to be incompatible with
+# automated pushes — you needed an API key with MFA disabled, stored as a
+# long-lived secret. Trusted publishing removes that trade entirely.
+#
+# One-time setup on rubygems.org:
+#
+#   rubygems.org -> the qopanza gem -> Trusted publishers -> Create
+#     Repository owner:  isingomajoel2023
+#     Repository name:   qopanza-sdks
+#     Workflow filename: publish-ruby.yml
+#     Environment:       release
+#
+# For a gem that does not exist yet, RubyGems supports registering a pending
+# trusted publisher from your profile before the first push — so unlike npm,
+# the first release can go out this way too.
+name: Publish Ruby SDK
+
+on:
+  push:
+    tags: ["ruby-v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          working-directory: ruby
+          bundler-cache: true
+
+      - name: Tag matches gem version
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: ruby
+        run: |
+          tag="${GITHUB_REF_NAME#ruby-v}"
+          pkg="$(ruby -r ./lib/qopanza -e 'puts Qopanza::VERSION')"
+          echo "tag=$tag gem=$pkg"
+          [ "$tag" = "$pkg" ] || {
+            echo "::error::Tag $GITHUB_REF_NAME implies $tag but lib/qopanza.rb says $pkg."
+            exit 1
+          }
+
+      - name: Test
+        working-directory: ruby
+        run: rake test || ruby -Ilib -Itest test/test_client.rb
+
+      # spec.files is the classic gem bug: the gem builds, installs, and
+      # then fails on require because a file was never listed.
+      - name: Build the gem and list its contents
+        working-directory: ruby
+        run: |
+          gem build qopanza.gemspec
+          gem contents --spec-dir . 2>/dev/null || true
+          tar -xOf ./*.gem data.tar.gz | tar -tz | sort
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          working-directory: ruby
+          bundler-cache: true
+
+      # Two actions exist for this. rubygems/release-gem runs `rake release`
+      # from the working directory, which is the repository root here and
+      # holds no gemspec — so it is the wrong one for a gem in a
+      # subdirectory. This one only writes credentials, leaving the push
+      # explicit and in the right directory.
+      #
+      # With no inputs it uses trusted publishing. If it turns out to want a
+      # `role-to-assume` (an OIDC API Key Role, rg_oidc_akr_...), that value
+      # comes from the gem's "OIDC: Create" page on rubygems.org and is not
+      # a secret in the usual sense — but prefer the trusted publisher.
+      - name: Configure RubyGems credentials via OIDC
+        uses: rubygems/configure-rubygems-credentials@main
+
+      - name: Build and push the gem
+        working-directory: ruby
+        run: |
+          set -euo pipefail
+          gem build qopanza.gemspec
+          gem push ./*.gem

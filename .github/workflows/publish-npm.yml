@@ -1,0 +1,101 @@
+# npm, on an npm-v* tag. See publish-python.yml for why this file lives
+# under sdks/.github/workflows/ in the source repository.
+#
+# Trusted Publishing (OIDC): no token in repository secrets. One-time setup
+# on npmjs.com, after the package exists:
+#
+#   npmjs.com -> the qopanza package -> Settings -> Trusted publisher
+#     Organization or user: isingomajoel2023
+#     Repository:           qopanza-sdks
+#     Workflow filename:    publish-npm.yml
+#     Environment:          release
+#
+# npm is retiring token-based publishing (account changes Aug 2026, direct
+# publishing Jan 2027), so this is not merely the better option — it is the
+# one that keeps working.
+#
+# For the very first publish the package does not exist yet, so there is
+# nothing to attach a trusted publisher to. Publish 0.1.0 once from your
+# machine with `npm publish` and 2FA, then configure the trusted publisher
+# and let this workflow handle every release after it.
+name: Publish npm SDK
+
+on:
+  push:
+    tags: ["npm-v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: typescript
+        run: |
+          tag="${GITHUB_REF_NAME#npm-v}"
+          pkg="$(node -p "require('./package.json').version")"
+          echo "tag=$tag package=$pkg"
+          [ "$tag" = "$pkg" ] || {
+            echo "::error::Tag $GITHUB_REF_NAME implies $tag but package.json says $pkg."
+            exit 1
+          }
+
+      - name: Install, build, test
+        working-directory: typescript
+        run: |
+          npm ci
+          npm run build --if-present
+          npm test --if-present
+
+      # `npm pack` writes exactly what would be published. Listing it is the
+      # cheapest way to catch a `files` field that omits dist/ — the bug
+      # where everything passes locally because the file is on disk anyway,
+      # and the published package is empty.
+      - name: Show what would be published
+        working-directory: typescript
+        run: |
+          npm pack --dry-run
+          npm pack
+          tar -tzf ./*.tgz | sort
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: typescript/*.tgz
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      # Provenance attestation — npm records which workflow and commit built
+      # the tarball, and shows it on the package page.
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      # OIDC publishing needs a recent npm; the one bundled with Node 22 may
+      # predate it. Upgrading here rather than relying on the runner image
+      # keeps this working when the image changes underneath us.
+      - name: Use an npm that understands trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Publish
+        working-directory: typescript
+        run: |
+          npm ci
+          npm run build --if-present
+          npm publish --provenance --access public

@@ -1,0 +1,107 @@
+# NuGet, on a nuget-v* tag. See publish-python.yml for why this file lives
+# under sdks/.github/workflows/ in the source repository.
+#
+# Trusted Publishing (OIDC). NuGet/login exchanges this workflow's identity
+# token for an API key valid for about an hour. One-time setup:
+#
+#   nuget.org -> your account -> Trusted Publishing -> Add
+#     Repository owner:  isingomajoel2023
+#     Repository:        qopanza-sdks
+#     Workflow file:     publish-nuget.yml
+#     Environment:       release
+#
+# This is not optional for much longer: from 17 August 2026 newly created
+# NuGet API keys last 30 days, and keys created before that expire on
+# 1 November 2026. A stored key is a thing that breaks on a date.
+#
+# The csproj already sets SourceLink and deterministic builds, which is why
+# publishing from *this* repository matters — SourceLink embeds the
+# repository URL and commit, and every manifest names qopanza-sdks. Built
+# anywhere else, "check this package against its source" resolves to a
+# commit that does not exist.
+name: Publish NuGet SDK
+
+on:
+  push:
+    tags: ["nuget-v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # SourceLink needs real history to resolve the commit; a shallow
+      # checkout produces a package that points at nothing.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#nuget-v}"
+          pkg="$(python3 -c "
+          import re,pathlib
+          t = pathlib.Path('csharp/Qopanza.Sdk/Qopanza.Sdk.csproj').read_text()
+          print(re.search(r'<Version>([^<]+)</Version>', t).group(1))")"
+          echo "tag=$tag package=$pkg"
+          [ "$tag" = "$pkg" ] || {
+            echo "::error::Tag $GITHUB_REF_NAME implies $tag but Qopanza.Sdk.csproj says $pkg."
+            exit 1
+          }
+
+      - name: Restore, build, test
+        working-directory: csharp
+        run: |
+          dotnet restore
+          dotnet build --no-restore -c Release
+          dotnet test --no-build -c Release
+
+      - name: Pack
+        working-directory: csharp
+        run: dotnet pack Qopanza.Sdk/Qopanza.Sdk.csproj --no-build -c Release -o ../nupkgs
+
+      # A .nupkg is a zip. Listing it catches a missing README or a symbols
+      # package that was never produced, before the version is spent.
+      - name: Show what would be published
+        run: |
+          ls -la nupkgs/
+          for f in nupkgs/*.nupkg; do echo "== $f"; unzip -l "$f"; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nupkgs
+          path: nupkgs/
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/download-artifact@v4
+        with:
+          name: nupkgs
+          path: nupkgs/
+
+      - name: Exchange the OIDC token for a NuGet API key
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: qopanza
+
+      - name: Push
+        run: |
+          dotnet nuget push "nupkgs/*.nupkg" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

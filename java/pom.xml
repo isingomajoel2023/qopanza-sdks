@@ -88,4 +88,103 @@
       </plugin>
     </plugins>
   </build>
+
+  <!-- Everything Maven Central requires beyond the jar itself, kept in a
+       profile so `mvn test` and `mvn package` stay fast. Javadoc and GPG
+       add roughly a minute and neither is wanted on a normal build.
+
+       Release with:  mvn -Prelease deploy
+
+       Central refuses a bundle that is missing any of the three below,
+       and it refuses it *after* upload, in a validation step, so the
+       failure arrives late and reads like a server problem rather than a
+       missing plugin. -->
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <!-- -sources.jar. Required by Central, and the reason anyone
+               can step into this library in a debugger. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.4.0</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals><goal>jar-no-fork</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- -javadoc.jar. Also required. doclint is off because Central
+               requires the jar to exist, not for every parameter to carry
+               a @param — and a strict doclint failure blocks a release
+               over a missing sentence. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.12.0</version>
+            <configuration>
+              <doclint>none</doclint>
+              <quiet>true</quiet>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals><goal>jar</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- Every artifact signed, including the POM and the two jars
+               above. In CI there is no TTY to prompt for a passphrase, so
+               loopback pinentry (configured below) plus
+               MAVEN_GPG_PASSPHRASE in the environment is the only
+               combination that works unattended. Without it the build
+               hangs waiting for a prompt nobody can answer, rather than
+               failing, which is worse. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.8</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals><goal>sign</goal></goals>
+                <configuration>
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- The Central Portal publisher. This replaced the OSSRH
+               nexus-staging plugin, which is retired — anything you find
+               online referencing oss.sonatype.org is describing a service
+               that no longer exists.
+
+               autoPublish=false uploads the bundle and stops, so the
+               first release can be inspected in the portal and dropped if
+               it is wrong. A published version can never be replaced. -->
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.11.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+              <waitUntil>validated</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
