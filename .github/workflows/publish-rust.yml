@@ -78,4 +78,21 @@ jobs:
         working-directory: rust
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-        run: cargo publish
+        run: |
+          set -euo pipefail
+
+          # Re-running an already-successful publish must not go red — the
+          # reasoning is in publish-python.yml. cargo has no skip flag, so
+          # the one specific "already uploaded" response is tolerated and
+          # nothing else is.
+          if cargo publish 2>&1 | tee /tmp/cargo-publish.log; then
+            exit 0
+          fi
+
+          if grep -qiE "already uploaded|already exists" /tmp/cargo-publish.log; then
+            echo "::notice::This version is already on crates.io — re-run of a successful publish, not a failure."
+            exit 0
+          fi
+
+          echo "::error::cargo publish failed for a reason other than the version already existing."
+          exit 1

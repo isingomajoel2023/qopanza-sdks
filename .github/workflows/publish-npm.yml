@@ -96,6 +96,23 @@ jobs:
       - name: Publish
         working-directory: typescript
         run: |
+          set -euo pipefail
           npm ci
           npm run build --if-present
-          npm publish --provenance --access public
+
+          # Re-running an already-successful publish must not go red — the
+          # reasoning is in publish-python.yml. npm has no --skip-existing,
+          # so the one specific "this version is already published" response
+          # is tolerated here and nothing else is: any other failure still
+          # fails the job, loudly.
+          if npm publish --provenance --access public 2>&1 | tee /tmp/npm-publish.log; then
+            exit 0
+          fi
+
+          if grep -qiE "cannot publish over|EPUBLISHCONFLICT|previously published" /tmp/npm-publish.log; then
+            echo "::notice::This version is already on npm — re-run of a successful publish, not a failure."
+            exit 0
+          fi
+
+          echo "::error::npm publish failed for a reason other than the version already existing."
+          exit 1

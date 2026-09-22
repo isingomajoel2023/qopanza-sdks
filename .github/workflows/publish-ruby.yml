@@ -94,4 +94,19 @@ jobs:
         run: |
           set -euo pipefail
           gem build qopanza.gemspec
-          gem push ./*.gem
+
+          # Re-running an already-successful publish must not go red — the
+          # reasoning is in publish-python.yml. `gem push` has no skip flag,
+          # so RubyGems' specific refusal to repush a version is tolerated
+          # here and nothing else is.
+          if gem push ./*.gem 2>&1 | tee /tmp/gem-push.log; then
+            exit 0
+          fi
+
+          if grep -qiE "repushing|already been pushed|already exists" /tmp/gem-push.log; then
+            echo "::notice::This version is already on RubyGems — re-run of a successful publish, not a failure."
+            exit 0
+          fi
+
+          echo "::error::gem push failed for a reason other than the version already existing."
+          exit 1

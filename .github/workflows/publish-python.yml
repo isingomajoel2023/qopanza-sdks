@@ -103,4 +103,15 @@ jobs:
         with:
           name: python-dist
           path: dist/
+      # `skip-existing` makes a re-run of an already-successful publish a
+      # no-op instead of a failure. Without it, re-running this job after
+      # it worked ends in `400 File already exists` — a red X on a release
+      # that in fact shipped, which is the worst kind of CI signal: it
+      # invites you to go looking for a problem that is not there, and
+      # teaches you to distrust the next real one.
+      #
+      # It does NOT hide a failed upload. It only tolerates a file whose
+      # contents PyPI already holds; anything else still fails the job.
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
