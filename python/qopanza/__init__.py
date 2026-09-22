@@ -2,9 +2,12 @@
 
     from qopanza import QopanzaClient
 
-    with QopanzaClient(base_url="https://api.example.com") as client:
+    with QopanzaClient() as client:
         account = client.signup("you@example.com", "a-real-password")
         print(account["api_key"])   # shown once — store it now
+
+Talks to https://api.qopanza.com by default. Pass `base_url` (or set
+QOPANZA_BASE_URL for the CLI) to reach a backend you run yourself.
 
 `zk` (zero-knowledge mode: keys generated and used on your own machine)
 is deliberately NOT imported here — it needs the optional native
@@ -20,4 +23,4 @@ from qopanza.client import QopanzaAPIError, QopanzaClient
 # submodule import to write `except` is a papercut on the first thing a
 # new user does after the happy path.
 __all__ = ["QopanzaAPIError", "QopanzaClient"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

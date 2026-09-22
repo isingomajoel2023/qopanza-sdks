@@ -8,11 +8,18 @@ the client module docstring), then exercises encrypt/decrypt, sign/verify,
 and the AI analysis endpoint.
 """
 
+import os
+
 import httpx
 
 from qopanza import QopanzaClient
 
-BASE_URL = "http://localhost:8000"
+# Local by default, because this script signs up a throwaway account and
+# that belongs on a stack you own. Point it elsewhere to run the same
+# walkthrough against the hosted API:
+#
+#     QOPANZA_BASE_URL=https://api.qopanza.com python examples/quickstart.py
+BASE_URL = os.environ.get("QOPANZA_BASE_URL", "http://localhost:8000")
 
 
 def get_api_key() -> str:

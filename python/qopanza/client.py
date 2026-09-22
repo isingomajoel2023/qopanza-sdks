@@ -9,7 +9,7 @@ Start from nothing:
 
     from qopanza import QopanzaClient
 
-    with QopanzaClient(base_url="https://api.example.com") as client:
+    with QopanzaClient() as client:
         account = client.signup("you@example.com", "a-real-password")
         print(account["api_key"])   # shown once — store it now
 
@@ -19,7 +19,11 @@ Start from nothing:
 
 Already have a key:
 
-    client = QopanzaClient(base_url="https://api.example.com", api_key=key)
+    client = QopanzaClient(api_key=key)
+
+Running the backend yourself:
+
+    client = QopanzaClient(base_url="http://localhost:8000", api_key=key)
 """
 
 from __future__ import annotations
@@ -28,6 +32,21 @@ import base64
 from typing import Any
 
 import httpx
+
+
+# The hosted API. This is the default because the overwhelmingly common
+# case for an installed package is somebody talking to the service, not
+# somebody running the backend on their own machine.
+#
+# It used to default to http://localhost:8000, which meant `pip install
+# qopanza && qopanza login && qopanza scan .` ended in a connection
+# refused against a server the user had never heard of. Anyone running
+# the backend locally still passes base_url, or sets QOPANZA_BASE_URL.
+#
+# Defined once, here, and imported by the CLI. Before this there were
+# three copies of the literal — client default, CLI client factory, CLI
+# login — which is how they were able to be wrong together.
+DEFAULT_BASE_URL = "https://api.qopanza.com"
 
 
 def _b64e(data: bytes) -> str:
@@ -56,7 +75,7 @@ class QopanzaClient:
 
     def __init__(
         self,
-        base_url: str = "http://localhost:8000",
+        base_url: str = DEFAULT_BASE_URL,
         api_key: str | None = None,
         timeout: float = 15.0,
     ):
@@ -84,7 +103,7 @@ class QopanzaClient:
         This is the one call that works *without* credentials, so it is
         how a new user starts:
 
-            with QopanzaClient(base_url="https://api.example.com") as client:
+            with QopanzaClient() as client:
                 account = client.signup("you@example.com", "a-real-password")
                 print(account["api_key"])   # store this — shown once
                 client.encrypt(plaintext=b"already authenticated")

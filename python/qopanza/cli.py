@@ -19,6 +19,10 @@
     qopanza zk keygen                  generate a keypair locally (never uploaded)
     qopanza zk encrypt --key k.json    encrypt on this machine only
 
+Talks to https://api.qopanza.com. To reach a backend you run yourself,
+`qopanza login --base-url http://localhost:8000`, or set
+QOPANZA_BASE_URL for a single invocation.
+
 Deliberately stdlib-only apart from the SDK's own httpx dependency: a
 security tool that drags in a tree of transitive packages is a harder
 sell to the teams most likely to care about supply chain.
@@ -36,7 +40,9 @@ import os
 import sys
 from pathlib import Path
 
-from qopanza.client import QopanzaAPIError, QopanzaClient
+import httpx
+
+from qopanza.client import DEFAULT_BASE_URL, QopanzaAPIError, QopanzaClient
 
 CONFIG_PATH = Path(os.environ.get("QOPANZA_CONFIG", Path.home() / ".config" / "qopanza" / "config.json"))
 
@@ -77,12 +83,23 @@ def save_config(config: dict) -> None:
         pass
 
 
+def resolve_base_url(config: dict) -> str:
+    """Where to send requests.
+
+    A saved config written by an older version pinned
+    http://localhost:8000, because `login` used to persist the default
+    it was given. Those files are still on disk, so the value is read
+    back as-is and the error path (see `main`) names it — silently
+    rewriting somebody's stored endpoint would be worse than telling
+    them which one is being used.
+    """
+    return config.get("base_url") or DEFAULT_BASE_URL
+
+
 def make_client(config: dict) -> QopanzaClient:
     if not config.get("api_key"):
         raise SystemExit("Not logged in. Run 'qopanza login' or set QOPANZA_API_KEY.")
-    return QopanzaClient(
-        base_url=config.get("base_url", "http://localhost:8000"), api_key=config["api_key"]
-    )
+    return QopanzaClient(base_url=resolve_base_url(config), api_key=config["api_key"])
 
 
 # ---- output helpers --------------------------------------------------------
@@ -111,9 +128,15 @@ def cmd_login(args) -> int:
         return EXIT_ERROR
 
     config["api_key"] = api_key
-    config["base_url"] = args.base_url or config.get("base_url", "http://localhost:8000")
+    # Only an explicit --base-url is persisted. Writing the default into
+    # the file is what made the old localhost default so sticky: every
+    # user who ever ran `login` had it frozen on disk, so changing the
+    # default in a later release would not have reached them.
+    if args.base_url:
+        config["base_url"] = args.base_url
     save_config(config)
     print(f"Credentials saved to {CONFIG_PATH}")
+    print(f"API endpoint: {resolve_base_url(config)}")
     return EXIT_OK
 
 
@@ -749,6 +772,39 @@ def main(argv: list[str] | None = None) -> int:
         return args.func(args)
     except QopanzaAPIError as exc:
         print(f"API error [{exc.status_code}]: {exc.detail}", file=sys.stderr)
+        return EXIT_ERROR
+    except httpx.TimeoutException:
+        base_url = resolve_base_url(load_config())
+        print(f"Timed out talking to {base_url}.", file=sys.stderr)
+        return EXIT_ERROR
+    except httpx.TransportError as exc:
+        # The first thing a new install can hit, so it gets a sentence
+        # rather than a stack trace. Before this, `qopanza scan .` on a
+        # machine that could not reach the API printed seventy lines of
+        # httpx internals — which is not an error message, it is a crash,
+        # and it read as a broken package rather than a wrong address.
+        #
+        # TransportError is the base class for connect/read/write/proxy
+        # failures, so this covers DNS, refused connections and TLS
+        # without enumerating them.
+        base_url = resolve_base_url(load_config())
+        print(f"Cannot reach the Qopanza API at {base_url}", file=sys.stderr)
+        print(f"  ({type(exc).__name__}: {exc})", file=sys.stderr)
+        if "localhost" in base_url or "127.0.0.1" in base_url:
+            # Almost always a config file written by an older version,
+            # which pinned localhost whether or not you asked for it.
+            print(
+                f"\nThat is a local address, so this is looking for a backend on your\n"
+                f"own machine. If you meant the hosted API, repoint it:\n"
+                f"\n    qopanza login --base-url {DEFAULT_BASE_URL}\n",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "\nCheck your network, or set a different endpoint with\n"
+                "QOPANZA_BASE_URL or 'qopanza login --base-url ...'.",
+                file=sys.stderr,
+            )
         return EXIT_ERROR
     except SystemExit as exc:
         if isinstance(exc.code, str):

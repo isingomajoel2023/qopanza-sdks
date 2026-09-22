@@ -33,7 +33,7 @@ the returned key onto the client so the next call is authenticated.
 ```python
 from qopanza import QopanzaClient
 
-with QopanzaClient(base_url="https://api.example.com") as client:
+with QopanzaClient() as client:
     account = client.signup("you@example.com", "a-real-password")
     print(account["api_key"])   # shown once — store it now
 
@@ -54,7 +54,7 @@ reuses it.
 ```python
 from qopanza import QopanzaClient
 
-with QopanzaClient(base_url="https://api.example.com", api_key=api_key) as client:
+with QopanzaClient(api_key=api_key) as client:
     enc = client.encrypt(plaintext=b"customer sensitive information")
     data = client.decrypt(**enc)
     assert data == b"customer sensitive information"
@@ -74,7 +74,7 @@ keypair = zk.generate_keypair()                        # local, never uploaded
 envelope = zk.encrypt(keypair.public_key, b"secret")   # local
 assert zk.decrypt(keypair.secret_key, envelope) == b"secret"
 
-with QopanzaClient(base_url="http://localhost:8000", api_key=api_key) as client:
+with QopanzaClient(api_key=api_key) as client:
     client.register_key(
         purpose="kem", algorithm=keypair.algorithm, public_key=keypair.public_key
     )
@@ -90,7 +90,7 @@ through the server. See `docs/zero-knowledge.md`.
 ```python
 from qopanza import QopanzaClient
 
-with QopanzaClient(base_url="http://localhost:8000", api_key=api_key) as client:
+with QopanzaClient(api_key=api_key) as client:
     # Generate a KEM keypair
     key = client.create_key(purpose="kem", label="order-service-kem")
 
@@ -147,6 +147,34 @@ Add `--json` to any command for machine-readable output.
 Credentials come from `~/.config/qopanza/config.json` or, taking
 precedence, `QOPANZA_API_KEY` / `QOPANZA_BASE_URL` — so CI can inject them
 without writing anything to disk.
+
+### Which API it talks to
+
+`https://api.qopanza.com`, unless you say otherwise. Nothing to
+configure for normal use.
+
+To point it somewhere else — a local backend, or a staging
+deployment — either persist it:
+
+```bash
+qopanza login --base-url http://localhost:8000
+```
+
+or set it per-invocation, which wins over the saved value:
+
+```bash
+QOPANZA_BASE_URL=http://localhost:8000 qopanza posture
+```
+
+`qopanza login` prints the endpoint it will use, so you can see which
+one is in effect without opening the config file.
+
+> **Upgrading from 0.1.0?** That release defaulted to
+> `http://localhost:8000` and wrote it into your config file on login,
+> so every command failed with a connection error unless you were also
+> running the backend. Upgrading alone will not clear the saved value —
+> run `qopanza login --base-url https://api.qopanza.com` once, or delete
+> `~/.config/qopanza/config.json` and log in again.
 
 ### Using it as a CI gate
 
