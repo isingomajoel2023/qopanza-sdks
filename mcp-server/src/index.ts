@@ -147,7 +147,7 @@ const TOOLS = [
       "site actually serves, so anything found is ALREADY PUBLIC to every " +
       "visitor. Use this when the user asks whether their app is safe, secure, " +
       "or ready to launch, or mentions deploying. Works on Lovable, Bolt, v0, " +
-      "Replit, Vercel and Netlify apps. Free — no API key required.",
+      "Replit, Vercel and Netlify apps. Free on every plan.",
     inputSchema: {
       type: "object",
       properties: {
@@ -185,8 +185,8 @@ const TOOLS = [
       "Get the exact changes that fix findings from a scan: code edits with " +
       "before/after, config files to create, SQL policies, and the console steps " +
       "a human must do. Pass the findings array from scan_app_url or " +
-      "scan_app_code. Requires a Pro plan; returns a clear message explaining " +
-      "how to upgrade if the account is on Free.\n\n" +
+      "scan_app_code. Requires a paid plan (App Security or above); returns a " +
+      "clear message explaining how to upgrade if the account is on Free.\n\n" +
       "IMPORTANT: steps have an `automatable` flag. Steps where it is false — " +
       "rotating a leaked key in the provider's dashboard, enabling RLS in " +
       "Supabase — CANNOT be done for the user. Never tell the user the problem " +
@@ -256,7 +256,7 @@ const TOOLS = [
 ];
 
 const server = new Server(
-  { name: "quantum-safe", version: "0.1.0" },
+  { name: "qopanza", version: "0.1.0" },
   { capabilities: { tools: {} } },
 );
 
@@ -411,7 +411,7 @@ async function main(): Promise<void> {
   // written to stdout except protocol frames — a stray console.log
   // corrupts the stream and the server appears to hang.
   await server.connect(new StdioServerTransport());
-  console.error(`quantum-safe MCP server ready (api: ${BASE_URL})`);
+  console.error(`Qopanza MCP server ready (api: ${BASE_URL})`);
 }
 
 main().catch((error) => {

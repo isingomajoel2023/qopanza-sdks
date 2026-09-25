@@ -36,7 +36,10 @@ claude mcp add qopanza -e QOPANZA_API_KEY=qsk_... -- npx -y qopanza-mcp
 ```
 
 Published on npm as [`qopanza-mcp`](https://www.npmjs.com/package/qopanza-mcp).
-Setup for the other agents is in its [README](mcp-server/README.md).
+Agents that run in the cloud — Lovable, Replit — cannot launch `npx`, and
+connect to the hosted server at `https://api.qopanza.com/mcp` with the
+same API key instead. Setup for every agent is in its
+[README](mcp-server/README.md).
 
 ## Getting started
 

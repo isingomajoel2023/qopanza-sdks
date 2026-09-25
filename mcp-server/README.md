@@ -34,6 +34,34 @@ the published package the first time. Node 18 or newer.
 claude mcp add qopanza -e QOPANZA_API_KEY=qsk_... -- npx -y qopanza-mcp
 ```
 
+**Codex** (OpenAI):
+
+```bash
+codex mcp add qopanza --env QOPANZA_API_KEY=qsk_... -- npx -y qopanza-mcp
+```
+
+or by hand in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.qopanza]
+command = "npx"
+args = ["-y", "qopanza-mcp"]
+
+[mcp_servers.qopanza.env]
+QOPANZA_API_KEY = "qsk_..."
+```
+
+**Grok Build** (xAI) — in `~/.grok/config.toml`. Grok expands
+`${QOPANZA_API_KEY}` from your shell at start-up, so the key never has to
+be written into the file. `grok mcp doctor qopanza` checks the connection.
+
+```toml
+[mcp_servers.qopanza]
+command = "npx"
+args = ["-y", "qopanza-mcp"]
+env = { QOPANZA_API_KEY = "${QOPANZA_API_KEY}" }
+```
+
 **Cursor** (`~/.cursor/mcp.json`), **Windsurf** (`~/.codeium/windsurf/mcp_config.json`)
 and **Claude Desktop** (`claude_desktop_config.json`) all take the same
 block:
@@ -61,6 +89,24 @@ your agent's local config, never in your project's code. `QOPANZA_BASE_URL`
 defaults to `https://api.qopanza.com/v1`; set it only for a self-hosted
 deployment.
 
+### Lovable, Replit and other cloud agents: the hosted server
+
+Agents that run in the vendor's cloud cannot launch `npx`. They connect to
+a server by URL instead, and Qopanza hosts one with the same four tools:
+
+```
+https://api.qopanza.com/mcp
+```
+
+Authenticate with your API key, either as `Authorization: Bearer qsk_...`
+or as an `X-API-Key: qsk_...` header.
+
+- **Lovable:** Connectors → **+** → **MCP server**. Server name `Qopanza`,
+  the URL above, and choose **Bearer token or API key** with your key.
+- **Replit:** Integrations → MCP Servers → **+ Add MCP server**. Display
+  name `Qopanza`, the URL above as **MCP Server URL**, then **Advanced
+  settings** → header `X-API-Key` with your key → **Test & save**.
+
 ### From source
 
 For working on the server itself:
@@ -78,7 +124,7 @@ claude mcp add qopanza -- node "$(pwd)/dist/index.js"
 |---|---|---|
 | `scan_app_url` | Free | Fetches a deployed site and reads the JavaScript it serves. Anything found is already public. |
 | `scan_app_code` | Free | Scans one file's contents — what an agent calls while editing. |
-| `get_fixes` | **Pro** | Turns findings into exact edits, config files and SQL policies. |
+| `get_fixes` | **App Security** or above | Turns findings into exact edits, config files and SQL policies. |
 | `scan_crypto` | Free | The quantum-vulnerability scan, for code with its own cryptography. |
 
 Every tool needs `QOPANZA_API_KEY`. Without one the server does not fail
