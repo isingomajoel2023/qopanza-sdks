@@ -22,6 +22,7 @@ Each language releases independently. One tag, one registry.
 | Ruby | `ruby-v0.1.0` | RubyGems | `ruby/lib/qopanza.rb` |
 | C# | `nuget-v0.1.0` | NuGet | `csharp/Qopanza.Sdk/Qopanza.Sdk.csproj` |
 | Java | `java-v0.1.0` | Maven Central | `java/pom.xml` |
+| MCP server | `mcp-v0.1.0` | npm (`qopanza-mcp`) | `mcp-server/package.json` |
 | Go | `go/v0.1.0` | none — the tag *is* the release | the tag only |
 | PHP | `v0.1.0` in **qopanza-php** | Packagist | the tag only |
 | C++ | — | none | — |
@@ -80,6 +81,8 @@ Gsente LLC <security@qopanza.com>
 - **npm** cannot have a trusted publisher until the package exists.
   Publish `0.1.0` once from a laptop with `npm publish --access public`
   and 2FA, then configure the trusted publisher and let CI do the rest.
+  That applies twice: once for `qopanza` (`typescript/`, `publish-npm.yml`)
+  and once for `qopanza-mcp` (`mcp-server/`, `publish-mcp.yml`).
 - **Maven Central** uploads with `autoPublish=false`. The workflow leaves
   the bundle validated but unpublished; you press Publish in the portal.
   A published version can never be replaced, so look at the first one.

@@ -25,6 +25,19 @@ computer will eventually break.
 Go has no registry by design: `go get` fetches straight from this
 repository. C++ has no dominant one, so it builds from source.
 
+### For AI coding agents: the MCP server
+
+[`mcp-server/`](mcp-server/) is not a client library but a tool server for
+Claude Code, Cursor, Windsurf and Claude Desktop. It lets the agent scan
+an app for exposed secrets and apply the fixes itself.
+
+```bash
+claude mcp add qopanza -e QOPANZA_API_KEY=qsk_... -- npx -y qopanza-mcp
+```
+
+Published on npm as [`qopanza-mcp`](https://www.npmjs.com/package/qopanza-mcp).
+Setup for the other agents is in its [README](mcp-server/README.md).
+
 ## Getting started
 
 ```bash
