@@ -130,7 +130,9 @@ function renderScan(scan: ScanResponse): string {
     lines.push(`[${finding.severity.toUpperCase()}]${hedge} ${finding.title}`);
     lines.push(`  where: ${where}`);
     lines.push(`  what:  ${finding.explanation}`);
-    lines.push(`  fix:   ${finding.remediation}`);
+    // Empty below App Security: the fix is withheld, and fix_hint below
+    // says where it comes from.
+    if (finding.remediation) lines.push(`  fix:   ${finding.remediation}`);
     lines.push("");
   }
 
