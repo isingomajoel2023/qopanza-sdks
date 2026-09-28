@@ -140,6 +140,14 @@ function renderScan(scan: ScanResponse): string {
   return lines.join("\n");
 }
 
+function indented(text: string): string {
+  return text
+    .replace(/\n+$/, "")
+    .split("\n")
+    .map((line) => `       ${line}`)
+    .join("\n");
+}
+
 const TOOLS = [
   {
     name: "scan_app_url",
@@ -330,6 +338,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (step.file) lines.push(`     file: ${step.file}:${step.line ?? ""}`);
             if (step.create_file) lines.push(`     create: ${step.create_file}`);
             if (step.console_url) lines.push(`     go to: ${step.console_url}`);
+            // The change itself. Without these an agent reading the text got
+            // "Create netlify.toml" and no file, or "Add this to your server
+            // code" and no code.
+            if (step.before) lines.push("     before:", indented(step.before));
+            if (step.after) lines.push("     after:", indented(step.after));
+            if (step.create_content) {
+              lines.push(step.create_file ? "     content:" : "     text:");
+              lines.push(indented(step.create_content));
+            }
           }
           lines.push("");
         }
@@ -376,9 +393,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: "text",
             text:
               `This needs a paid plan.\n\n${error.message}\n\n` +
-              `The scan results you already have are complete — nothing was ` +
-              `hidden. You can fix the problems by hand from the descriptions, ` +
-              `or upgrade to have the exact changes generated.`,
+              `The scan results you already have list every problem, where it ` +
+              `is and why it matters — nothing was hidden. How to fix each one ` +
+              `comes with App Security.`,
           },
         ],
       };
